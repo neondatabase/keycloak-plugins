@@ -21,7 +21,7 @@ public class ProviderFactory implements UserStorageProviderFactory<Provider> {
     public void init(Config.Scope config) {
         // get db connection
         try {
-            conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres?user=admin&password=admin");
+            conn = DriverManager.getConnection("jdbc:postgresql://db:5432/postgres?user=postgres&password=password");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -30,8 +30,8 @@ public class ProviderFactory implements UserStorageProviderFactory<Provider> {
     }
 
     @Override
-    public Provider create(KeycloakSession keycloakSession, ComponentModel componentModel) {
-        return new Provider(conn);
+    public Provider create(KeycloakSession session, ComponentModel model) {
+        return new Provider(session, model, conn);
     }
 
 }
