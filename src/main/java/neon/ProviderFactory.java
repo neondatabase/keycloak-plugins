@@ -21,7 +21,7 @@ public class ProviderFactory implements UserStorageProviderFactory<Provider> {
     public void init(Config.Scope config) {
         // get db connection
         try {
-            conn = DriverManager.getConnection(System.getenv("NEON_CONSOLE_DATABASE"));
+            conn = DriverManager.getConnection("jdbc:" + System.getenv("DATABASE_URL"));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
