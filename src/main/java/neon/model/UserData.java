@@ -9,9 +9,11 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.models.UserModel;
+import org.keycloak.storage.LegacyStoreManagers;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -178,17 +180,14 @@ public class UserData implements UserModel {
 
     @Override
     public void setSingleAttribute(String name, String value) {
-        throw new ReadOnlyException();
     }
 
     @Override
     public void setAttribute(String name, List<String> values) {
-        throw new ReadOnlyException();
     }
 
     @Override
     public void removeAttribute(String name) {
-        throw new ReadOnlyException();
     }
 
     @Override
@@ -203,7 +202,7 @@ public class UserData implements UserModel {
 
     @Override
     public Map<String, List<String>> getAttributes() {
-        return null;
+        return new HashMap<>();
     }
 
 
@@ -245,7 +244,7 @@ public class UserData implements UserModel {
 
     @Override
     public Stream<RoleModel> getRoleMappingsStream() {
-        return null;
+        return Stream.empty();
     }
 
     @Override

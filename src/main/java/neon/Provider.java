@@ -97,7 +97,7 @@ public class Provider implements
             results.getString("email"),
             results.getString("name"),
             results.getString("last_name"),
-            results.getString("deleted_at") != null
+            results.getString("deleted_at") == null
         );
     }
 }
