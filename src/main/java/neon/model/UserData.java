@@ -2,18 +2,10 @@ package neon.model;
 
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.LegacyUserCredentialManager;
-import org.keycloak.models.ClientModel;
-import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.SubjectCredentialManager;
-import org.keycloak.models.UserModel;
-import org.keycloak.storage.LegacyStoreManagers;
+import org.keycloak.models.*;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -192,17 +184,23 @@ public class UserData implements UserModel {
 
     @Override
     public String getFirstAttribute(String name) {
-        return null;
+        return getAttributeStream(name).findFirst().orElse(null);
     }
 
     @Override
     public Stream<String> getAttributeStream(String name) {
-        return Stream.empty();
+        return getAttributes().getOrDefault(name, List.of()).stream();
     }
 
     @Override
     public Map<String, List<String>> getAttributes() {
-        return new HashMap<>();
+        return Map.of(
+                UserModel.FIRST_NAME, List.of(firstName),
+                UserModel.LAST_NAME, List.of(lastName),
+                UserModel.EMAIL, List.of(email),
+                UserModel.EMAIL_VERIFIED, List.of("false"),
+                UserModel.ENABLED, List.of(enabled? "true": "false")
+        );
     }
 
 
@@ -255,5 +253,19 @@ public class UserData implements UserModel {
     @Override
     public void deleteRoleMapping(RoleModel role) {
         throw new ReadOnlyException();
+    }
+
+    @Override
+    public String toString() {
+        return "UserData{" +
+                "session=" + session +
+                ", realm=" + realm +
+                ", model=" + model +
+                ", id='" + id + '\'' +
+                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", enabled=" + enabled +
+                '}';
     }
 }

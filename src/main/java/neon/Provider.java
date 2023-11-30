@@ -9,8 +9,10 @@ import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
 
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Provider implements
         UserStorageProvider,
@@ -51,6 +53,8 @@ public class Provider implements
                 throw new RuntimeException("multiple results from user lookup query");
             }
 
+            System.out.println(user);
+
             return user;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -77,6 +81,8 @@ public class Provider implements
                 throw new RuntimeException("multiple results from user lookup query");
             }
 
+            System.out.println(user);
+
             return user;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -85,7 +91,6 @@ public class Provider implements
 
     @Override
     public UserModel getUserByUsername(RealmModel realm, String s) {
-        System.out.println("GET BY USERNAME");
         return getUserByEmail(realm, s); // usernames are emails in our system
     }
     
