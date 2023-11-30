@@ -11,7 +11,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     <keycloak.version>22.0.3</keycloak.version>
+    <postgres.version>42.7.0</postgres.version>
   </properties>
 
   <dependencies>
@@ -32,6 +34,14 @@
       <version>${keycloak.version}</version>
       <scope>provided</scope>
     </dependency>
+
+    <!--DB driver-->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgres.version}</version>
+    </dependency>
+
 
     <!--testing-->
     <dependency>
