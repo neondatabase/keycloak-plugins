@@ -1,5 +1,6 @@
 package neonauth;
 
+import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.models.KeycloakSession;
@@ -9,6 +10,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 
 public class NeonAuth implements Authenticator {
+
+    private static final Logger LOG = Logger.getLogger(NeonAuth.class);
 
     @Override
     public void close() {
@@ -40,10 +43,11 @@ public class NeonAuth implements Authenticator {
 
     @Override
     public void setRequiredActions(KeycloakSession arg0, RealmModel arg1, UserModel user) {
-        System.out.println("CALLED - setRequiredActions");
         if (user.isEmailVerified()) {
             return;
         }
+
+        LOG.info("Chaning required actions and reset password for user whose email is not verified. Email: " + user.getEmail());
 
         SubjectCredentialManager manager = user.credentialManager();
 
