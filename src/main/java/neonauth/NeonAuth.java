@@ -47,7 +47,7 @@ public class NeonAuth implements Authenticator {
             return;
         }
 
-        LOG.info("Chaning required actions and reset password for user whose email is not verified. Email: " + user.getEmail());
+        LOG.info("Changing required actions and reset password for user whose email is not verified. Email: " + user.getEmail());
 
         SubjectCredentialManager manager = user.credentialManager();
 
