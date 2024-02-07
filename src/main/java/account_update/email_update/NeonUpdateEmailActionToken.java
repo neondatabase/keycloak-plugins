@@ -1,4 +1,4 @@
-package neonaccount.updateemail;
+package account_update.email_update;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.keycloak.authentication.actiontoken.DefaultActionToken;

@@ -1,4 +1,4 @@
-package neonaccount;
+package account_update;
 
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
@@ -9,7 +9,7 @@ import org.keycloak.services.resource.RealmResourceProviderFactory;
 public class AccountChangeResourceProviderFactory implements RealmResourceProviderFactory {
 
     // This will result in a new sub path under an existing realm
-    // eg. http://localhost:8088/auth/realms/realm-name/custom
+    // eg. http://localhost:8080/realms/local-realm/neon-account-update
     public static final String ID = "neon-account-update";
 
     @Override

@@ -1,7 +1,7 @@
-package neonaccount;
+package account_update;
 
 import jakarta.ws.rs.core.UriInfo;
-import neonaccount.updateemail.NeonUpdateEmailActionToken;
+import account_update.email_update.NeonUpdateEmailActionToken;
 import org.jboss.logging.Logger;
 
 import org.keycloak.authorization.util.Tokens;
