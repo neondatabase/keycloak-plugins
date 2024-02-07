@@ -1,38 +1,30 @@
-package neonauth;
+package trust_email;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.keycloak.Config.Scope;
-import org.keycloak.authentication.Authenticator;
-import org.keycloak.authentication.AuthenticatorFactory;
 import org.keycloak.models.AuthenticationExecutionModel.Requirement;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 
-public class NeonAuthenticatorFactory implements AuthenticatorFactory {
+public class AuthenticatorFactory implements org.keycloak.authentication.AuthenticatorFactory {
 
     @Override
-    public Authenticator create(KeycloakSession session) {
-        return new NeonAuth();
+    public org.keycloak.authentication.Authenticator create(KeycloakSession session) {
+        return new Authenticator();
     }
 
     @Override
-    public void init(Scope config) {
-        return;
-    }
+    public void init(Scope config) {}
 
     @Override
-    public void postInit(KeycloakSessionFactory factory) {
-        return;
-    }
+    public void postInit(KeycloakSessionFactory factory) {}
 
     @Override
-    public void close() {
-        return;
-    }
+    public void close() {}
 
     @Override
     public String getId() {
@@ -66,7 +58,7 @@ public class NeonAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
     public String getHelpText() {
-        return "custom made neon authenticator to deal with unverified email signing with social login";
+        return "set email as valid, clear any email validation action, delete any pre-existing password";
     }
 
     @Override

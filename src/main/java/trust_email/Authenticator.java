@@ -1,38 +1,30 @@
-package neonauth;
+package trust_email;
 
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
-import org.keycloak.authentication.Authenticator;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 
-public class NeonAuth implements Authenticator {
+public class Authenticator implements org.keycloak.authentication.Authenticator {
 
-    private static final Logger LOG = Logger.getLogger(NeonAuth.class);
-
-    @Override
-    public void close() {
-        return;
-    }
+    private static final Logger LOG = Logger.getLogger(Authenticator.class);
 
     @Override
-    public void action(AuthenticationFlowContext arg0) {
-        return;
-    }
+    public void close() {}
+
+    @Override
+    public void action(AuthenticationFlowContext context) {}
 
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         context.success();
-        return;
     }
 
-
-
     @Override
-    public boolean configuredFor(KeycloakSession session, RealmModel arg1, UserModel arg2) {
+    public boolean configuredFor(KeycloakSession session, RealmModel model, UserModel user) {
        return false;
     }
 
@@ -42,7 +34,7 @@ public class NeonAuth implements Authenticator {
     }
 
     @Override
-    public void setRequiredActions(KeycloakSession arg0, RealmModel arg1, UserModel user) {
+    public void setRequiredActions(KeycloakSession session, RealmModel model, UserModel user) {
         if (user.isEmailVerified()) {
             return;
         }

@@ -3,12 +3,13 @@
 Custom Java plugins for Keycloak:
 - [Trust Email](src/main/java/trust_email/README.md)
 
-Documentation on how to create Keycloak plugins can be found in the
+Documentation on how to create Keycloak plugins can be found in the 
 [Keycloak SPIs][1]
 
 ## Build
 
-Ensure you have the Maven build command `mvn` installed. An IDE such as Intellij
+Ensure you have the Maven build command `mvn` installed. An IDE such as Intellij 
+
 may provide this for you automatically
 
 Run the following command:
@@ -34,14 +35,14 @@ RUN wget https://github.com/neondatabase/keycloak-plugins/releases/download/<VER
 
 COPY --from=neon-plugins /neon-plugins.jar /opt/keycloak/providers/
 ```
-replacing the `<VERSION>` as appropriate
+replacing the `<VERSION>` as appropriate 
 
 ## Release
 
 Updated versions of these plugins should be shared via GitHub Releases
 
 you must include the compiled JAR file in the release artifacts, as dependent
-projects are expected to download this directly from GitHub as part of their
+projects are expected to download this directly from GitHub as part of their 
 build pipeline
 
 
