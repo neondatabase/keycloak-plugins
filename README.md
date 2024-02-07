@@ -9,6 +9,7 @@ Documentation on how to create Keycloak plugins can be found in the
 ## Build
 
 Ensure you have the Maven build command `mvn` installed. An IDE such as Intellij 
+
 may provide this for you automatically
 
 Run the following command:
