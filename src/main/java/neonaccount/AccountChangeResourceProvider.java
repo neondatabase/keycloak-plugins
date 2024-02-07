@@ -1,8 +1,9 @@
 package neonaccount;
 
 import jakarta.ws.rs.core.UriInfo;
+import neonaccount.updateemail.NeonUpdateEmailActionToken;
 import org.jboss.logging.Logger;
-import org.keycloak.authentication.actiontoken.updateemail.UpdateEmailActionToken;
+
 import org.keycloak.authorization.util.Tokens;
 import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
@@ -21,7 +22,6 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.userprofile.UserProfileContext;
 
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
@@ -86,7 +86,7 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
             return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
         }
 
-        UpdateEmailActionToken actionToken = new UpdateEmailActionToken(user.getId(),
+        NeonUpdateEmailActionToken actionToken = new NeonUpdateEmailActionToken(user.getId(),
                 Time.currentTime() + Timeout,
                 user.getEmail(), newEmail, clientId, true);
 
