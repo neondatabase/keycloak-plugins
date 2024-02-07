@@ -2,6 +2,7 @@
 
 Custom Java plugins for Keycloak:
 - [Trust Email](src/main/java/trust_email/README.md)
+- [Account Update](src/main/java/account_update/README.md)
 
 Documentation on how to create Keycloak plugins can be found in the 
 [Keycloak SPIs][1]

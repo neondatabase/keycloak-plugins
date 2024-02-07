@@ -1,4 +1,4 @@
-package neonaccount.updateemail;
+package account_update.email_update;
 
 import jakarta.ws.rs.core.Response;
 import org.keycloak.TokenVerifier;
