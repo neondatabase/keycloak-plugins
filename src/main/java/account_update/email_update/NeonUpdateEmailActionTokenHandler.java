@@ -11,6 +11,7 @@ import org.keycloak.events.Errors;
 import org.keycloak.events.EventType;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.messages.Messages;
@@ -93,6 +94,11 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
         user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
         tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
 
+        // unlink all social providers links from Keycloak
+        RealmModel realm = session.getContext().getRealm();
+        session.users().getFederatedIdentitiesStream(realm, user).
+                forEach(link -> session.users().removeFederatedIdentity(realm, user, link.getIdentityProvider()));
+
         // updating console database users and auth_accounts tables
         try {
             PreparedStatement getStmt = conn.prepareStatement("select user_id from auth_accounts WHERE provider_uid = ?");
@@ -111,9 +117,17 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 stmt.setString(4, consoleUserId);
 
                 stmt.execute();
+
+                // unlink all social providers from auth_accounts (in case the user linked again after changing email and before validating email)
+                PreparedStatement removeSocialLinks = conn.prepareStatement("DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak'");
+                removeSocialLinks.setString(1, consoleUserId);
+
+                removeSocialLinks.execute();
             }
         } catch (SQLException e) {
             System.out.println("ERROR updating console database after email change for keycloak user " + user.getId());
+            System.out.println("exception " + e.getMessage());
+            e.printStackTrace();
         }
 
         return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).setSuccess("emailUpdated", newEmail)
