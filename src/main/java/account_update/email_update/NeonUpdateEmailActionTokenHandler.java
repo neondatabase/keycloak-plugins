@@ -44,7 +44,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             String user = userInfoParts[0];
             String password = userInfoParts[1];
 
-            String basicConn = String.format("jdbc:postgresql://%s:%s/postgres", uri.getHost(), uri.getPort());
+            String basicConn = String.format("jdbc:postgresql://%s:%s%s", uri.getHost(), uri.getPort(), uri.getPath());
             conn = DriverManager.getConnection(basicConn, user, password);
         } catch (SQLException | URISyntaxException e) {
             throw new RuntimeException(e);
