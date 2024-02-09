@@ -35,18 +35,12 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
     public NeonUpdateEmailActionTokenHandler() {
         super(NeonUpdateEmailActionToken.TOKEN_TYPE, NeonUpdateEmailActionToken.class, Messages.STALE_VERIFY_EMAIL_LINK,
                 EventType.EXECUTE_ACTIONS, Errors.INVALID_TOKEN);
+
+        String connectionString = System.getenv("CONSOLE_DB_URL");
         try {
-            URI uri = new URI(System.getenv("DATABASE_URL"));
-
-            // Extract the user and password components
-            String userInfo = uri.getUserInfo();
-            String[] userInfoParts = userInfo.split(":");
-            String user = userInfoParts[0];
-            String password = userInfoParts[1];
-
-            String basicConn = String.format("jdbc:postgresql://%s:%s%s", uri.getHost(), uri.getPort(), uri.getPath());
-            conn = DriverManager.getConnection(basicConn, user, password);
-        } catch (SQLException | URISyntaxException e) {
+            conn = DriverManager.getConnection(connectionString);
+        } catch (SQLException e) {
+            System.out.println("Failed starting connection with " + connectionString);
             throw new RuntimeException(e);
         }
     }
@@ -122,12 +116,11 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 PreparedStatement removeSocialLinks = conn.prepareStatement("DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak'");
                 removeSocialLinks.setString(1, consoleUserId);
 
-                removeSocialLinks.execute();
+                removeSocialLinks.executeQuery();
             }
         } catch (SQLException e) {
             System.out.println("ERROR updating console database after email change for keycloak user " + user.getId());
-            System.out.println("exception " + e.getMessage());
-            e.printStackTrace();
+            System.out.println("exception " + e);
         }
 
         return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).setSuccess("emailUpdated", newEmail)
