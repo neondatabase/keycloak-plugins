@@ -11,6 +11,7 @@ import org.keycloak.events.Errors;
 import org.keycloak.events.EventType;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.messages.Messages;
@@ -34,18 +35,11 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
     public NeonUpdateEmailActionTokenHandler() {
         super(NeonUpdateEmailActionToken.TOKEN_TYPE, NeonUpdateEmailActionToken.class, Messages.STALE_VERIFY_EMAIL_LINK,
                 EventType.EXECUTE_ACTIONS, Errors.INVALID_TOKEN);
+
+        String connectionString = System.getenv("CONSOLE_DB_URL");
         try {
-            URI uri = new URI(System.getenv("DATABASE_URL"));
-
-            // Extract the user and password components
-            String userInfo = uri.getUserInfo();
-            String[] userInfoParts = userInfo.split(":");
-            String user = userInfoParts[0];
-            String password = userInfoParts[1];
-
-            String basicConn = String.format("jdbc:postgresql://%s:%s/postgres", uri.getHost(), uri.getPort());
-            conn = DriverManager.getConnection(basicConn, user, password);
-        } catch (SQLException | URISyntaxException e) {
+            conn = DriverManager.getConnection(connectionString);
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -93,6 +87,11 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
         user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
         tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
 
+        // unlink all social providers links from Keycloak
+        RealmModel realm = session.getContext().getRealm();
+        session.users().getFederatedIdentitiesStream(realm, user).
+                forEach(link -> session.users().removeFederatedIdentity(realm, user, link.getIdentityProvider()));
+
         // updating console database users and auth_accounts tables
         try {
             PreparedStatement getStmt = conn.prepareStatement("select user_id from auth_accounts WHERE provider_uid = ?");
@@ -111,9 +110,16 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 stmt.setString(4, consoleUserId);
 
                 stmt.execute();
+
+                // unlink all social providers from auth_accounts (in case the user linked again after changing email and before validating email)
+                PreparedStatement removeSocialLinks = conn.prepareStatement("DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak'");
+                removeSocialLinks.setString(1, consoleUserId);
+
+                removeSocialLinks.executeQuery();
             }
         } catch (SQLException e) {
-            System.out.println("ERROR updating console database after email change for keycloak user " + user.getId());
+            System.err.println("ERROR updating console database after email change for keycloak user " + user.getId());
+            e.printStackTrace();
         }
 
         return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).setSuccess("emailUpdated", newEmail)
