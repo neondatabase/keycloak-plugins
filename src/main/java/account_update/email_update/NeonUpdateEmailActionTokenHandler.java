@@ -118,7 +118,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 removeSocialLinks.executeQuery();
             }
         } catch (SQLException e) {
-            System.out.println("ERROR updating console database after email change for keycloak user " + user.getId());
+            System.err.println("ERROR updating console database after email change for keycloak user " + user.getId());
             e.printStackTrace();
         }
 
