@@ -119,7 +119,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             }
         } catch (SQLException e) {
             System.out.println("ERROR updating console database after email change for keycloak user " + user.getId());
-            System.out.println("exception " + e);
+            e.printStackTrace();
         }
 
         return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).setSuccess("emailUpdated", newEmail)
