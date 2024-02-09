@@ -40,7 +40,6 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
         try {
             conn = DriverManager.getConnection(connectionString);
         } catch (SQLException e) {
-            System.out.println("Failed starting connection with " + connectionString);
             throw new RuntimeException(e);
         }
     }
