@@ -1,5 +1,6 @@
 package account_update;
 
+import jakarta.mail.internet.AddressException;
 import jakarta.ws.rs.core.UriInfo;
 import account_update.email_update.NeonUpdateEmailActionToken;
 import org.jboss.logging.Logger;
@@ -100,6 +101,12 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
             session.getProvider(EmailTemplateProvider.class).setRealm(realm)
                     .setUser(user).sendEmailUpdateConfirmation(link, TimeUnit.SECONDS.toMinutes(Timeout), newEmail);
         } catch (EmailException e) {
+            if (e.getCause() instanceof AddressException) {
+                return Response.status(Response.Status.BAD_REQUEST).
+                        entity("Bad address given for email - " + e.getCause().getMessage()).build();
+            }
+
+
             logger.error("Failed to send email for email update", e);
             event.event(EventType.UPDATE_EMAIL_ERROR).error(Errors.EMAIL_SEND_FAILED);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
