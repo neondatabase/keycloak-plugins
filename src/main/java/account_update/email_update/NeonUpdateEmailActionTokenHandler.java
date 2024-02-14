@@ -115,7 +115,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 PreparedStatement removeSocialLinks = conn.prepareStatement("DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak'");
                 removeSocialLinks.setString(1, consoleUserId);
 
-                removeSocialLinks.executeQuery();
+                removeSocialLinks.execute();
             }
         } catch (SQLException e) {
             System.err.println("ERROR updating console database after email change for keycloak user " + user.getId());
