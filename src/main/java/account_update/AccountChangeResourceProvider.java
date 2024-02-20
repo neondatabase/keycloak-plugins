@@ -29,13 +29,13 @@ import jakarta.ws.rs.core.*;
 
 public class AccountChangeResourceProvider implements RealmResourceProvider {
 
-    private final KeycloakSession session;
-    private final Auth auth;
-    private final RealmModel realm;
-    private final EventBuilder event;
-    private final ClientModel client;
-    private static final Logger logger = Logger.getLogger(AccountChangeResourceProvider.class);
-    private static final int Timeout = 60 * 15;
+    private KeycloakSession session;
+    private Auth auth;
+    private RealmModel realm;
+    private EventBuilder event;
+    private ClientModel client;
+    private static Logger logger = Logger.getLogger(AccountChangeResourceProvider.class);
+    private static int Timeout = 60 * 15;
 
     public AccountChangeResourceProvider(KeycloakSession session) {
         this.session = session;
