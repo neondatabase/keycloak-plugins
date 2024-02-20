@@ -5,6 +5,7 @@ import org.keycloak.TokenVerifier;
 import org.keycloak.authentication.AuthenticatorUtil;
 import org.keycloak.authentication.actiontoken.AbstractActionTokenHandler;
 import org.keycloak.authentication.actiontoken.ActionTokenContext;
+import org.keycloak.authentication.actiontoken.ActionTokenHandler;
 import org.keycloak.authentication.actiontoken.TokenUtils;
 import org.keycloak.authentication.requiredactions.UpdateEmail;
 import org.keycloak.events.Errors;
@@ -21,8 +22,6 @@ import org.keycloak.userprofile.ValidationException;
 import java.sql.*;
 import java.util.List;
 import java.util.Objects;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
 // modified from UpdateEmailActionTokenHandler
@@ -34,13 +33,6 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
     public NeonUpdateEmailActionTokenHandler() {
         super(NeonUpdateEmailActionToken.TOKEN_TYPE, NeonUpdateEmailActionToken.class, Messages.STALE_VERIFY_EMAIL_LINK,
                 EventType.EXECUTE_ACTIONS, Errors.INVALID_TOKEN);
-
-        String connectionString = System.getenv("CONSOLE_DB_URL");
-        try {
-            conn = DriverManager.getConnection(connectionString);
-        } catch (SQLException e) {
-            System.err.println("ERROR connecting to Console DB. Continuing...");
-        }
     }
 
     @Override
@@ -53,17 +45,6 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
 
     @Override
     public Response handleToken(NeonUpdateEmailActionToken token, ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
-        if (conn == null) {
-            System.err.println("ERROR - connecting to Console DB is null. trying again");
-            try {
-                conn = DriverManager.getConnection(System.getenv("CONSOLE_DB_URL"));
-            } catch (SQLException e) {
-                System.err.println("ERROR retrying connecting to Console DB");
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        }
-
         AuthenticationSessionModel authenticationSession = tokenContext.getAuthenticationSession();
         UserModel user = authenticationSession.getAuthenticatedUser();
 
@@ -158,15 +139,6 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             }
         } finally {
             session.close();
-
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    System.err.println("ERROR closing connection to Console DB");
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
@@ -174,5 +146,29 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
     public boolean canUseTokenRepeatedly(NeonUpdateEmailActionToken token,
                                          ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
         return false;
+    }
+
+    @Override
+    public ActionTokenHandler<NeonUpdateEmailActionToken> create(KeycloakSession session) {
+        String connectionString = System.getenv("CONSOLE_DB_URL");
+        try {
+            conn = DriverManager.getConnection(connectionString);
+        } catch (SQLException e) {
+            System.err.println("ERROR connecting to Console DB");
+            throw new RuntimeException(e);
+        }
+        return this;
+    }
+
+    @Override
+    public void close() {
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.err.println("ERROR closing connection to Console DB");
+                e.printStackTrace();
+            }
+        }
     }
 }
