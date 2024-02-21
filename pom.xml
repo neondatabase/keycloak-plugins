@@ -13,7 +13,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <keycloak.version>22.0.3</keycloak.version>
-    <postgres.version>42.7.0</postgres.version>
+    <postgres.version>42.7.2</postgres.version>
   </properties>
 
   <dependencies>
