@@ -142,7 +142,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 "BEGIN;" +
                 "UPDATE auth_accounts SET email = ? WHERE provider_uid = ?;" +
                 "UPDATE users SET email = ? WHERE id::text = ?;" +
-                "END"
+                "END;"
             )) {
                 stmt.setString(1, newEmail);
                 stmt.setString(2, user.getId());
