@@ -1,7 +1,6 @@
 package account_update.email_update;
 
 import jakarta.ws.rs.core.Response;
-import org.keycloak.Config;
 import org.keycloak.TokenVerifier;
 import org.keycloak.authentication.AuthenticatorUtil;
 import org.keycloak.authentication.actiontoken.AbstractActionTokenHandler;
@@ -27,69 +26,44 @@ import java.util.stream.Stream;
 // modified from UpdateEmailActionTokenHandler
 // https://github.com/keycloak/keycloak/blob/66f0d2ff1db6f5ec442b0ddab4580bdd652d8877/services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java
 public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandler<NeonUpdateEmailActionToken> {
-
-    private Connection conn;
-
-    // FACTORY METHODS
-
-    @Override
-    public void init(Config.Scope config) {
-        String connectionString = System.getenv("CONSOLE_DB_URL");
-
-        try {
-            conn = DriverManager.getConnection(connectionString);
-        } catch (SQLException e) {
-            throw new RuntimeException("ERROR connecting to Console DB", e);
-        }
-    }
-
-
-    @Override
-    public void close() {
-        if (conn == null) {
-            return;
-        }
-
-        try {
-            conn.close();
-        } catch (SQLException e) {
-            throw new RuntimeException("ERROR closing connection to Console DB", e);
-        }
-    }
-
-    // PROVIDER METHODS
+    private final String connectionString;
 
     public NeonUpdateEmailActionTokenHandler() {
         super(
-                NeonUpdateEmailActionToken.TOKEN_TYPE,
-                NeonUpdateEmailActionToken.class,
-                Messages.STALE_VERIFY_EMAIL_LINK,
-                EventType.EXECUTE_ACTIONS,
-                Errors.INVALID_TOKEN
+            NeonUpdateEmailActionToken.TOKEN_TYPE,
+            NeonUpdateEmailActionToken.class,
+            Messages.STALE_VERIFY_EMAIL_LINK,
+            EventType.EXECUTE_ACTIONS,
+            Errors.INVALID_TOKEN
         );
+
+        connectionString = System.getenv("CONSOLE_DB_URL");
+        if (connectionString == null || connectionString.isEmpty()) {
+            throw new RuntimeException("invalid console connection string; please provide CONSOLE_DB_URL env var");
+        }
     }
 
     @Override
     public TokenVerifier.Predicate<? super NeonUpdateEmailActionToken>[] getVerifiers(
-            ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
+        ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
         return TokenUtils.predicates(TokenUtils.checkThat(
-                t -> Objects.equals(t.getOldEmail(), tokenContext.getAuthenticationSession().getAuthenticatedUser().getEmail()),
-                Errors.INVALID_EMAIL, getDefaultErrorMessage()));
+            t -> Objects.equals(t.getOldEmail(), tokenContext.getAuthenticationSession().getAuthenticatedUser().getEmail()),
+            Errors.INVALID_EMAIL, getDefaultErrorMessage()));
     }
 
     @Override
     public Response handleToken(
-            NeonUpdateEmailActionToken token,
-            ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
+        NeonUpdateEmailActionToken token,
+        ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
     ) {
         AuthenticationSessionModel authenticationSession = tokenContext.getAuthenticationSession();
         UserModel user = authenticationSession.getAuthenticatedUser();
 
         try (KeycloakSession session = tokenContext.getSession()) {
             LoginFormsProvider forms = session
-                    .getProvider(LoginFormsProvider.class)
-                    .setAuthenticationSession(authenticationSession)
-                    .setUser(user);
+                .getProvider(LoginFormsProvider.class)
+                .setAuthenticationSession(authenticationSession)
+                .setUser(user);
 
             try {
                 String newEmail = token.getNewEmail();
@@ -129,55 +103,68 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
 
                 // updating console database users and auth_accounts tables
                 try {
-                    PreparedStatement getStmt = conn.prepareStatement("select user_id from auth_accounts WHERE provider_uid = ?");
-                    getStmt.setString(1, user.getId());
-                    String consoleUserId = "";
-
-                    try {
-                        try (ResultSet results = getStmt.executeQuery()) {
-                            if (results.next()) {
-                                consoleUserId = results.getString("user_id");
-
-                                try (PreparedStatement stmt = conn.prepareStatement(
-                                        "BEGIN; UPDATE auth_accounts SET email = ? WHERE provider_uid = ?;" +
-                                                "UPDATE users SET email = ? WHERE id::text = ?; END")) {
-                                    stmt.setString(1, newEmail);
-                                    stmt.setString(2, user.getId());
-                                    stmt.setString(3, newEmail);
-                                    stmt.setString(4, consoleUserId);
-
-                                    stmt.execute();
-
-                                    // unlink all social providers from auth_accounts (in case the user linked again after changing email and before validating email)
-                                    try (PreparedStatement removeSocialLinks = conn.prepareStatement(
-                                            "DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak'")) {
-                                        removeSocialLinks.setString(1, consoleUserId);
-
-                                        removeSocialLinks.execute();
-                                    }
-                                }
-                            }
-                        }
-                    } finally {
-                        getStmt.close();
-                    }
-                } catch (Exception e) {
+                    updateConsoleUser(user, newEmail);
+                } catch (SQLException e) {
                     throw new RuntimeException("ERROR updating console database after email change for keycloak user " + user.getId(), e);
                 }
 
                 return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).
-                        setSuccess("emailUpdated", newEmail)
-                        .createInfoPage();
+                    setSuccess("emailUpdated", newEmail)
+                    .createInfoPage();
             } finally {
                 forms.close();
             }
         }
     }
 
+    private void updateConsoleUser(UserModel user, String newEmail) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(connectionString)) {
+
+            // get the id of the corresponding user in console
+            String consoleUserId;
+            try (PreparedStatement getStmt = conn.prepareStatement(
+                "select user_id from auth_accounts WHERE provider_uid = ?;"
+            )) {
+                getStmt.setString(1, user.getId());
+
+                try (ResultSet results = getStmt.executeQuery()) {
+                    // this should never happen, if it does something is seriously wrong
+                    if (!results.next()) {
+                        throw new Error("user with provider ID did not exist in console DB: " + user.getId());
+                    }
+
+                    consoleUserId = results.getString("user_id");
+                }
+            }
+
+            //
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "BEGIN;" +
+                "UPDATE auth_accounts SET email = ? WHERE provider_uid = ?;" +
+                "UPDATE users SET email = ? WHERE id::text = ?;" +
+                "END"
+            )) {
+                stmt.setString(1, newEmail);
+                stmt.setString(2, user.getId());
+                stmt.setString(3, newEmail);
+                stmt.setString(4, consoleUserId);
+                stmt.execute();
+            }
+
+            // unlink all social providers from auth_accounts (in case the user linked again after changing email and before validating email)
+            try (PreparedStatement removeSocialLinks = conn.prepareStatement(
+                "DELETE from auth_accounts WHERE user_id::text = ? AND provider != 'keycloak';"
+            )) {
+                removeSocialLinks.setString(1, consoleUserId);
+                removeSocialLinks.execute();
+            }
+        }
+    }
+
     @Override
     public boolean canUseTokenRepeatedly(
-            NeonUpdateEmailActionToken token,
-            ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
+        NeonUpdateEmailActionToken token,
+        ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
     ) {
         return false;
     }
