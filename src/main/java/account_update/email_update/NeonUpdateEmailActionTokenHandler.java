@@ -1,11 +1,11 @@
 package account_update.email_update;
 
 import jakarta.ws.rs.core.Response;
+import org.keycloak.Config;
 import org.keycloak.TokenVerifier;
 import org.keycloak.authentication.AuthenticatorUtil;
 import org.keycloak.authentication.actiontoken.AbstractActionTokenHandler;
 import org.keycloak.authentication.actiontoken.ActionTokenContext;
-import org.keycloak.authentication.actiontoken.ActionTokenHandler;
 import org.keycloak.authentication.actiontoken.TokenUtils;
 import org.keycloak.authentication.requiredactions.UpdateEmail;
 import org.keycloak.events.Errors;
@@ -30,9 +30,43 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
 
     private Connection conn;
 
+    // FACTORY METHODS
+
+    @Override
+    public void init(Config.Scope config) {
+        String connectionString = System.getenv("CONSOLE_DB_URL");
+
+        try {
+            conn = DriverManager.getConnection(connectionString);
+        } catch (SQLException e) {
+            throw new RuntimeException("ERROR connecting to Console DB", e);
+        }
+    }
+
+
+    @Override
+    public void close() {
+        if (conn == null) {
+            return;
+        }
+
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("ERROR closing connection to Console DB", e);
+        }
+    }
+
+    // PROVIDER METHODS
+
     public NeonUpdateEmailActionTokenHandler() {
-        super(NeonUpdateEmailActionToken.TOKEN_TYPE, NeonUpdateEmailActionToken.class, Messages.STALE_VERIFY_EMAIL_LINK,
-                EventType.EXECUTE_ACTIONS, Errors.INVALID_TOKEN);
+        super(
+                NeonUpdateEmailActionToken.TOKEN_TYPE,
+                NeonUpdateEmailActionToken.class,
+                Messages.STALE_VERIFY_EMAIL_LINK,
+                EventType.EXECUTE_ACTIONS,
+                Errors.INVALID_TOKEN
+        );
     }
 
     @Override
@@ -44,14 +78,17 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
     }
 
     @Override
-    public Response handleToken(NeonUpdateEmailActionToken token, ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
+    public Response handleToken(
+            NeonUpdateEmailActionToken token,
+            ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
+    ) {
         AuthenticationSessionModel authenticationSession = tokenContext.getAuthenticationSession();
         UserModel user = authenticationSession.getAuthenticatedUser();
 
-        KeycloakSession session = tokenContext.getSession();
-
-        try {
-            LoginFormsProvider forms = session.getProvider(LoginFormsProvider.class).setAuthenticationSession(authenticationSession)
+        try (KeycloakSession session = tokenContext.getSession()) {
+            LoginFormsProvider forms = session
+                    .getProvider(LoginFormsProvider.class)
+                    .setAuthenticationSession(authenticationSession)
                     .setUser(user);
 
             try {
@@ -83,12 +120,10 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 // unlink all social providers links from Keycloak
                 RealmModel realm = session.getContext().getRealm();
 
-                Stream<FederatedIdentityModel> federatedLinks = session.users().getFederatedIdentitiesStream(realm, user);
                 UserProvider users = session.users();
-                try {
+                try (Stream<FederatedIdentityModel> federatedLinks = session.users().getFederatedIdentitiesStream(realm, user)) {
                     federatedLinks.forEach(link -> users.removeFederatedIdentity(realm, user, link.getIdentityProvider()));
                 } finally {
-                    federatedLinks.close();
                     users.close();
                 }
 
@@ -127,8 +162,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                         getStmt.close();
                     }
                 } catch (Exception e) {
-                    System.err.println("ERROR updating console database after email change for keycloak user " + user.getId());
-                    e.printStackTrace();
+                    throw new RuntimeException("ERROR updating console database after email change for keycloak user " + user.getId(), e);
                 }
 
                 return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).
@@ -137,38 +171,14 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             } finally {
                 forms.close();
             }
-        } finally {
-            session.close();
         }
     }
 
     @Override
-    public boolean canUseTokenRepeatedly(NeonUpdateEmailActionToken token,
-                                         ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
+    public boolean canUseTokenRepeatedly(
+            NeonUpdateEmailActionToken token,
+            ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
+    ) {
         return false;
-    }
-
-    @Override
-    public ActionTokenHandler<NeonUpdateEmailActionToken> create(KeycloakSession session) {
-        String connectionString = System.getenv("CONSOLE_DB_URL");
-        try {
-            conn = DriverManager.getConnection(connectionString);
-        } catch (SQLException e) {
-            System.err.println("ERROR connecting to Console DB");
-            throw new RuntimeException(e);
-        }
-        return this;
-    }
-
-    @Override
-    public void close() {
-        if (conn != null) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                System.err.println("ERROR closing connection to Console DB");
-                e.printStackTrace();
-            }
-        }
     }
 }
