@@ -11,7 +11,6 @@ import org.keycloak.events.Errors;
 import org.keycloak.events.EventType;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.*;
-import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.sessions.AuthenticationSessionModel;
@@ -19,9 +18,7 @@ import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.ValidationException;
 
 import java.sql.*;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 // modified from UpdateEmailActionTokenHandler
 // https://github.com/keycloak/keycloak/blob/66f0d2ff1db6f5ec442b0ddab4580bdd652d8877/services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java
@@ -45,7 +42,8 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
 
     @Override
     public TokenVerifier.Predicate<? super NeonUpdateEmailActionToken>[] getVerifiers(
-        ActionTokenContext<NeonUpdateEmailActionToken> tokenContext) {
+        ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
+    ) {
         return TokenUtils.predicates(TokenUtils.checkThat(
             t -> Objects.equals(t.getOldEmail(), tokenContext.getAuthenticationSession().getAuthenticatedUser().getEmail()),
             Errors.INVALID_EMAIL, getDefaultErrorMessage()));
@@ -56,65 +54,59 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
         NeonUpdateEmailActionToken token,
         ActionTokenContext<NeonUpdateEmailActionToken> tokenContext
     ) {
+        KeycloakSession session = tokenContext.getSession();
+
         AuthenticationSessionModel authenticationSession = tokenContext.getAuthenticationSession();
         UserModel user = authenticationSession.getAuthenticatedUser();
 
-        try (KeycloakSession session = tokenContext.getSession()) {
-            LoginFormsProvider forms = session
-                .getProvider(LoginFormsProvider.class)
-                .setAuthenticationSession(authenticationSession)
-                .setUser(user);
+        LoginFormsProvider forms = session
+            .getProvider(LoginFormsProvider.class)
+            .setAuthenticationSession(authenticationSession)
+            .setUser(user);
 
-            try {
-                String newEmail = token.getNewEmail();
+        String newEmail = token.getNewEmail();
 
-                UserProfile emailUpdateValidationResult;
-                try {
-                    emailUpdateValidationResult = UpdateEmail.validateEmailUpdate(session, user, newEmail);
-                } catch (ValidationException pve) {
-                    List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
-                    return forms.setErrors(errors).createErrorPage(Response.Status.BAD_REQUEST);
-                }
-
-                UpdateEmail.updateEmailNow(tokenContext.getEvent(), user, emailUpdateValidationResult);
-
-                if (Boolean.TRUE.equals(token.getLogoutSessions())) {
-                    AuthenticatorUtil.logoutOtherSessions(tokenContext);
-                }
-
-                tokenContext.getEvent().success();
-
-                // verify user email as we know it is valid as this entry point would never have gotten here.
-                user.setEmailVerified(true);
-                user.removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
-                tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
-                user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
-                tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
-
-                // unlink all social providers links from Keycloak
-                RealmModel realm = session.getContext().getRealm();
-
-                UserProvider users = session.users();
-                try (Stream<FederatedIdentityModel> federatedLinks = session.users().getFederatedIdentitiesStream(realm, user)) {
-                    federatedLinks.forEach(link -> users.removeFederatedIdentity(realm, user, link.getIdentityProvider()));
-                } finally {
-                    users.close();
-                }
-
-                // updating console database users and auth_accounts tables
-                try {
-                    updateConsoleUser(user, newEmail);
-                } catch (SQLException e) {
-                    throw new RuntimeException("ERROR updating console database after email change for keycloak user " + user.getId(), e);
-                }
-
-                return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).
-                    setSuccess("emailUpdated", newEmail)
-                    .createInfoPage();
-            } finally {
-                forms.close();
-            }
+        UserProfile emailUpdateValidationResult;
+        try {
+            emailUpdateValidationResult = UpdateEmail.validateEmailUpdate(session, user, newEmail);
+        } catch (ValidationException pve) {
+            return forms.setErrors(Validation.getFormErrorsFromValidation(pve.getErrors()))
+                .createErrorPage(Response.Status.BAD_REQUEST);
         }
+
+        UpdateEmail.updateEmailNow(tokenContext.getEvent(), user, emailUpdateValidationResult);
+
+        if (Boolean.TRUE.equals(token.getLogoutSessions())) {
+            AuthenticatorUtil.logoutOtherSessions(tokenContext);
+        }
+
+        tokenContext.getEvent().success();
+
+        // verify user email as we know it is valid as this entry point would never have gotten here.
+        user.setEmailVerified(true);
+
+        // remove any required actions to update or verify their email as we know it is now verified and updated
+        user.removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
+        tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
+        user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
+        tokenContext.getAuthenticationSession().removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
+
+        // unlink all social providers links from Keycloak
+        RealmModel realm = session.getContext().getRealm();
+        UserProvider users = session.users();
+        users.getFederatedIdentitiesStream(realm, user)
+            .forEach(link -> users.removeFederatedIdentity(realm, user, link.getIdentityProvider()));
+
+        // update console database `users` and `auth_accounts` tables
+        try {
+            updateConsoleUser(user, newEmail);
+        } catch (SQLException e) {
+            throw new RuntimeException("ERROR updating console database after email change for keycloak user " + user.getId(), e);
+        }
+
+        return forms.setAttribute("messageHeader", forms.getMessage("emailUpdatedTitle")).
+            setSuccess("emailUpdated", newEmail)
+            .createInfoPage();
     }
 
     private void updateConsoleUser(UserModel user, String newEmail) throws SQLException {
