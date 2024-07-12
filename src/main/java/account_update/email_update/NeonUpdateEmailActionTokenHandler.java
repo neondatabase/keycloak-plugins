@@ -19,6 +19,7 @@ import org.keycloak.userprofile.ValidationException;
 
 import java.sql.*;
 import java.util.Objects;
+import java.util.UUID;
 
 // modified from UpdateEmailActionTokenHandler
 // https://github.com/keycloak/keycloak/blob/66f0d2ff1db6f5ec442b0ddab4580bdd652d8877/services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java
@@ -99,7 +100,8 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
 
         // update console database `users` and `auth_accounts` tables
         try {
-            updateConsoleUser(user, newEmail);
+            String oldEmail = token.getOldEmail();
+            updateConsoleUser(user, newEmail, oldEmail);
         } catch (SQLException e) {
             throw new RuntimeException("ERROR updating console database after email change for keycloak user " + user.getId(), e);
         }
@@ -109,7 +111,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             .createInfoPage();
     }
 
-    private void updateConsoleUser(UserModel user, String newEmail) throws SQLException {
+    private void updateConsoleUser(UserModel user, String newEmail, String oldEmail) throws SQLException {
         try (Connection conn = DriverManager.getConnection(connectionString)) {
 
             // get the id of the corresponding user in console
@@ -149,6 +151,24 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
             )) {
                 removeSocialLinks.setString(1, consoleUserId);
                 removeSocialLinks.execute();
+            }
+
+            /**
+             * We need to handle 2 types of cases
+             * 1. granted_to_email = new_email AND granted_to = NULL - assign unclaimed project shares to new email
+             * 2. granted_to_email = old_email AND granted_to = user_id - update project shares on old email to new email
+             * We can cover both with 1 SQL statement.
+            */
+            try (PreparedStatement updateProjectPermissions = conn.prepareStatement(
+                "UPDATE projects_permissions " +
+                "SET granted_to_email = ?, granted_to = (SELECT id FROM users WHERE email = ?) " +
+                "WHERE granted_to_email = ? OR granted_to_email = ?;"
+            )) {
+                updateProjectPermissions.setString(1, newEmail);
+                updateProjectPermissions.setString(2, newEmail);
+                updateProjectPermissions.setString(3, newEmail);
+                updateProjectPermissions.setString(4, oldEmail);
+                updateProjectPermissions.execute();
             }
         }
     }
