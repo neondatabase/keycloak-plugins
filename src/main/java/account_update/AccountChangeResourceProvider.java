@@ -1,10 +1,12 @@
 package account_update;
 
-import jakarta.mail.internet.AddressException;
-import jakarta.ws.rs.core.UriInfo;
 import account_update.email_update.NeonUpdateEmailActionToken;
+import jakarta.mail.internet.AddressException;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
-
 import org.keycloak.authorization.util.Tokens;
 import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
@@ -24,26 +26,25 @@ import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.userprofile.UserProfileContext;
 
 import java.util.concurrent.TimeUnit;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.*;
 
 public class AccountChangeResourceProvider implements RealmResourceProvider {
 
-    private KeycloakSession session;
-    private Auth auth;
-    private RealmModel realm;
-    private EventBuilder event;
-    private ClientModel client;
-    private static Logger logger = Logger.getLogger(AccountChangeResourceProvider.class);
-    private static int Timeout = 60 * 15;
+    private static final Logger LOG = Logger.getLogger(AccountChangeResourceProvider.class);
+
+    private static final int TIMEOUT = 60 * 15;
+
+    private final KeycloakSession session;
+    private final Auth auth;
+    private final RealmModel realm;
+    private final EventBuilder event;
 
     public AccountChangeResourceProvider(KeycloakSession session) {
         this.session = session;
         this.realm = session.getContext().getRealm();
 
-        this.client = this.realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
+        ClientModel client = this.realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
         if (client == null || !client.isEnabled()) {
-            logger.debug("account management not enabled");
+            LOG.debug("account management not enabled");
             throw new NotFoundException("account management not enabled");
         }
         AuthenticationManager.AuthResult authResult = new AppAuthManager.BearerTokenAuthenticator(session)
@@ -58,9 +59,6 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
         this.event = new EventBuilder(realm, session, session.getContext().getConnection());
     }
 
-    @Context
-    private SecurityContext securityContext;
-
     @Override
     public Object getResource() {
         return this;
@@ -68,9 +66,7 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
 
     @Override
     public void close() {
-
     }
-
 
     @PUT
     @Path("/update-user-email/{clientId}")
@@ -88,26 +84,24 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
         }
 
         NeonUpdateEmailActionToken actionToken = new NeonUpdateEmailActionToken(user.getId(),
-                Time.currentTime() + Timeout,
+                Time.currentTime() + TIMEOUT,
                 user.getEmail(), newEmail, clientId, true);
 
         UriInfo uriInfo = session.getContext().getUri();
         String link = Urls
-                .actionTokenBuilder(uriInfo.getBaseUri(), actionToken.serialize(session, realm, uriInfo),
-                        clientId, "")
+                .actionTokenBuilder(uriInfo.getBaseUri(), actionToken.serialize(session, realm, uriInfo), clientId, "")
                 .build(realm.getName()).toString();
 
         try {
             session.getProvider(EmailTemplateProvider.class).setRealm(realm)
-                    .setUser(user).sendEmailUpdateConfirmation(link, TimeUnit.SECONDS.toMinutes(Timeout), newEmail);
+                    .setUser(user).sendEmailUpdateConfirmation(link, TimeUnit.SECONDS.toMinutes(TIMEOUT), newEmail);
         } catch (EmailException e) {
             if (e.getCause() instanceof AddressException) {
                 return Response.status(Response.Status.BAD_REQUEST).
                         entity("Bad address given for email - " + e.getCause().getMessage()).build();
             }
 
-
-            logger.error("Failed to send email for email update", e);
+            LOG.error("Failed to send email for email update", e);
             event.event(EventType.UPDATE_EMAIL_ERROR).error(Errors.EMAIL_SEND_FAILED);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
@@ -133,12 +127,41 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
         try {
             user.credentialManager().updateCredential(UserCredentialModel.password(newPassword, false));
         } catch (Exception e) {
-            logger.error("Failed to update user password", e);
+            LOG.error("Failed to update user password", e);
             event.event(EventType.UPDATE_PASSWORD_ERROR).error(Errors.PASSWORD_REJECTED);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
 
         return Response.ok().entity("Password updated successfully").build();
+    }
+
+    @DELETE
+    @Path("/delete-user-account")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response deleteUserAccount() {
+        auth.require(AccountRoles.DELETE_ACCOUNT);
+        event.event(EventType.DELETE_ACCOUNT).detail(Details.CONTEXT, UserProfileContext.ACCOUNT.name());
+
+        UserModel userFromToken = getUserFromToken(session);
+
+        UserModel user = session.users().getUserById(realm, userFromToken.getId());
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
+        }
+
+        try {
+            boolean removed = new UserManager(session).removeUser(realm, user);
+            if (!removed) {
+                throw new RuntimeException("User was not removed");
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to delete user account", e);
+            event.event(EventType.DELETE_ACCOUNT_ERROR).error(Errors.USER_DELETE_ERROR);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+        return Response.ok().entity("Account deleted successfully").build();
     }
 
     private UserModel getUserFromToken(KeycloakSession keycloakSession) {

@@ -9,8 +9,7 @@ Documentation on how to create Keycloak plugins can be found in the
 
 ## Build
 
-Ensure you have the Maven build command `mvn` installed. An IDE such as Intellij 
-
+Ensure you have the Maven build command `mvn` installed. An IDE such as Intellij
 may provide this for you automatically
 
 Run the following command:
@@ -45,6 +44,5 @@ Updated versions of these plugins should be shared via GitHub Releases
 you must include the compiled JAR file in the release artifacts, as dependent
 projects are expected to download this directly from GitHub as part of their 
 build pipeline
-
 
 [1]: https://www.keycloak.org/docs/latest/server_development/index.html#_providers
