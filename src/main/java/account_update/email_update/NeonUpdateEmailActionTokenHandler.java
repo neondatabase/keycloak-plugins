@@ -24,6 +24,7 @@ import java.util.UUID;
 // modified from UpdateEmailActionTokenHandler
 // https://github.com/keycloak/keycloak/blob/66f0d2ff1db6f5ec442b0ddab4580bdd652d8877/services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java
 public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandler<NeonUpdateEmailActionToken> {
+
     private final String connectionString;
 
     public NeonUpdateEmailActionTokenHandler() {

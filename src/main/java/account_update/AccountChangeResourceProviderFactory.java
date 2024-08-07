@@ -19,22 +19,18 @@ public class AccountChangeResourceProviderFactory implements RealmResourceProvid
 
     @Override
     public void init(Config.Scope scope) {
-
     }
 
     @Override
     public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-
     }
 
     @Override
     public void close() {
-
     }
 
     @Override
     public String getId() {
         return ID;
     }
-
 }

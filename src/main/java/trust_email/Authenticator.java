@@ -13,10 +13,12 @@ public class Authenticator implements org.keycloak.authentication.Authenticator 
     private static final Logger LOG = Logger.getLogger(Authenticator.class);
 
     @Override
-    public void close() {}
+    public void close() {
+    }
 
     @Override
-    public void action(AuthenticationFlowContext context) {}
+    public void action(AuthenticationFlowContext context) {
+    }
 
     @Override
     public void authenticate(AuthenticationFlowContext context) {
@@ -25,7 +27,7 @@ public class Authenticator implements org.keycloak.authentication.Authenticator 
 
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel model, UserModel user) {
-       return false;
+        return false;
     }
 
     @Override
@@ -47,7 +49,6 @@ public class Authenticator implements org.keycloak.authentication.Authenticator 
         manager.getStoredCredentialsByTypeStream(PasswordCredentialModel.TYPE).forEach(c -> manager.removeStoredCredentialById(c.getId()));
 
         user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
-
         user.setEmailVerified(true);
     }
 }
