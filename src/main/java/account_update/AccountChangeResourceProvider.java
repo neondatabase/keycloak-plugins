@@ -3,11 +3,13 @@ package account_update;
 import account_update.email_update.NeonUpdateEmailActionToken;
 import jakarta.mail.internet.AddressException;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.keycloak.authorization.util.Tokens;
+import org.keycloak.common.ClientConnection;
 import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
@@ -26,6 +28,7 @@ import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.userprofile.UserProfileContext;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class AccountChangeResourceProvider implements RealmResourceProvider {
 
@@ -135,13 +138,13 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
         return Response.ok().entity("Password updated successfully").build();
     }
 
-    @DELETE
-    @Path("/delete-user-account")
+    @PUT
+    @Path("/disable-user-account")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response deleteUserAccount() {
-        auth.require(AccountRoles.DELETE_ACCOUNT);
-        event.event(EventType.DELETE_ACCOUNT).detail(Details.CONTEXT, UserProfileContext.ACCOUNT.name());
+    public Response disableUserAccount() {
+        auth.require(AccountRoles.MANAGE_ACCOUNT);
+        event.event(EventType.UPDATE_PROFILE).detail(Details.CONTEXT, UserProfileContext.ACCOUNT.name());
 
         UserModel userFromToken = getUserFromToken(session);
 
@@ -151,17 +154,27 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
         }
 
         try {
-            boolean removed = new UserManager(session).removeUser(realm, user);
-            if (!removed) {
-                throw new RuntimeException("User was not removed");
-            }
+            user.setEnabled(false);
+
+            // Besides disabling the account, we should revoke all active sessions:
+
+            // copied from UserResource.logout()
+            session.users().setNotBeforeForUser(realm, user, Time.currentTime());
+
+            ClientConnection clientConnection = session.getContext().getConnection();
+            HttpHeaders headers = session.getContext().getRequestHeaders();
+            // copied from UserResource.logout()
+            session.sessions().getUserSessionsStream(realm, user)
+                    .collect(Collectors.toList()) // collect to avoid concurrent modification as backchannelLogout removes the user sessions.
+                    .forEach(userSession -> AuthenticationManager.backchannelLogout(session, realm, userSession,
+                            session.getContext().getUri(), clientConnection, headers, true));
         } catch (Exception e) {
-            LOG.error("Failed to delete user account", e);
-            event.event(EventType.DELETE_ACCOUNT_ERROR).error(Errors.USER_DELETE_ERROR);
+            LOG.error("Failed to disable user account", e);
+            event.event(EventType.UPDATE_PROFILE_ERROR).error(Errors.LOGOUT_FAILED);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
 
-        return Response.ok().entity("Account deleted successfully").build();
+        return Response.ok().entity("Account disabled successfully").build();
     }
 
     private UserModel getUserFromToken(KeycloakSession keycloakSession) {
