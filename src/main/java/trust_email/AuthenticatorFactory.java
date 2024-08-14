@@ -1,13 +1,13 @@
 package trust_email;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.keycloak.Config.Scope;
 import org.keycloak.models.AuthenticationExecutionModel.Requirement;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AuthenticatorFactory implements org.keycloak.authentication.AuthenticatorFactory {
 
