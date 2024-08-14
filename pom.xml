@@ -12,16 +12,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <keycloak.version>22.0.3</keycloak.version>
+    <keycloak.version>25.0.2</keycloak.version>
     <postgres.version>42.7.3</postgres.version>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-      <version>3.1.0</version>
-    </dependency>
     <dependency>
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-core</artifactId>
@@ -33,11 +28,6 @@
       <artifactId>keycloak-services</artifactId>
       <version>${keycloak.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-model-legacy</artifactId>
-      <version>22.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.keycloak</groupId>
@@ -53,14 +43,6 @@
       <version>${postgres.version}</version>
     </dependency>
 
-
-    <!--testing-->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

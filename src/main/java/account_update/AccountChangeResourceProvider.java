@@ -92,7 +92,7 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
 
         UriInfo uriInfo = session.getContext().getUri();
         String link = Urls
-                .actionTokenBuilder(uriInfo.getBaseUri(), actionToken.serialize(session, realm, uriInfo), clientId, "")
+                .actionTokenBuilder(uriInfo.getBaseUri(), actionToken.serialize(session, realm, uriInfo), clientId, "", "")
                 .build(realm.getName()).toString();
 
         try {
@@ -179,15 +179,15 @@ public class AccountChangeResourceProvider implements RealmResourceProvider {
 
     private UserModel getUserFromToken(KeycloakSession keycloakSession) {
         AccessToken accessToken = Tokens.getAccessToken(keycloakSession);
-        if (accessToken.getSessionState() == null) {
+        if (accessToken.getSessionId() == null) {
             return TokenManager.lookupUserFromStatelessToken(keycloakSession, realm, accessToken);
         }
 
         UserSessionProvider sessions = keycloakSession.sessions();
-        UserSessionModel userSession = sessions.getUserSession(realm, accessToken.getSessionState());
+        UserSessionModel userSession = sessions.getUserSession(realm, accessToken.getSessionId());
 
         if (userSession == null) {
-            userSession = sessions.getOfflineUserSession(realm, accessToken.getSessionState());
+            userSession = sessions.getOfflineUserSession(realm, accessToken.getSessionId());
         }
 
         return userSession.getUser();

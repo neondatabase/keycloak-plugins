@@ -10,7 +10,10 @@ import org.keycloak.authentication.requiredactions.UpdateEmail;
 import org.keycloak.events.Errors;
 import org.keycloak.events.EventType;
 import org.keycloak.forms.login.LoginFormsProvider;
-import org.keycloak.models.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
+import org.keycloak.models.UserProvider;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.sessions.AuthenticationSessionModel;
@@ -19,7 +22,6 @@ import org.keycloak.userprofile.ValidationException;
 
 import java.sql.*;
 import java.util.Objects;
-import java.util.UUID;
 
 // modified from UpdateEmailActionTokenHandler
 // https://github.com/keycloak/keycloak/blob/66f0d2ff1db6f5ec442b0ddab4580bdd652d8877/services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java
@@ -79,7 +81,7 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
         UpdateEmail.updateEmailNow(tokenContext.getEvent(), user, emailUpdateValidationResult);
 
         if (Boolean.TRUE.equals(token.getLogoutSessions())) {
-            AuthenticatorUtil.logoutOtherSessions(tokenContext);
+            AuthenticatorUtil.logoutOtherSessions(token, tokenContext);
         }
 
         tokenContext.getEvent().success();
@@ -132,7 +134,6 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 }
             }
 
-            //
             try (PreparedStatement stmt = conn.prepareStatement(
                 "BEGIN;" +
                 "UPDATE auth_accounts SET email = ? WHERE provider_uid = ?;" +
@@ -154,12 +155,12 @@ public class NeonUpdateEmailActionTokenHandler extends AbstractActionTokenHandle
                 removeSocialLinks.execute();
             }
 
-            /**
+            /*
              * We need to handle 2 types of cases
              * 1. granted_to_email = new_email AND granted_to = NULL - assign unclaimed project shares to new email
              * 2. granted_to_email = old_email AND granted_to = user_id - update project shares on old email to new email
              * We can cover both with 1 SQL statement.
-            */
+             */
             try (PreparedStatement updateProjectPermissions = conn.prepareStatement(
                 "UPDATE projects_permissions " +
                 "SET granted_to_email = ?, granted_to = (SELECT id FROM users WHERE email = ?) " +
