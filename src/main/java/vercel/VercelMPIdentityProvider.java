@@ -172,6 +172,7 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
         identity.setId(id);
         identity.setEmail(email);
         identity.setName(name);
+        identity.setUsername(email);
 
         identity.setBrokerUserId(getConfig().getAlias() + "." + id);
 
