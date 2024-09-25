@@ -148,7 +148,16 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
 
     // Extract user's identity from JWT.
     protected BrokeredIdentityContext extractIdentity(AccessTokenResponse tokenResponse, JsonWebToken idToken) {
-        String id = (String) idToken.getOtherClaims().get("installation_id");
+        // Global user ID is provided by Vercel only for Neon integrations!
+        // For other marketplace integrations it provides only user ID per each integration installation.
+        // I.e. the same Vercel user will have different ID in different Vercel teams.
+        //
+        // In case global_user_id is not set we will fall back to user ID per installation.
+        String id = (String) idToken.getOtherClaims().get("global_user_id");
+        if (id == null || id.isEmpty()) {
+            id = (String) idToken.getOtherClaims().get("user_id");
+        }
+
         BrokeredIdentityContext identity = new BrokeredIdentityContext(id, getConfig());
 
         String name = (String) idToken.getOtherClaims().get("user_name");
@@ -185,18 +194,15 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
 
         // Override parent's authResponse and change annotation to @POST to be able to use @GET with another list of parameters
         // and we need to initialize `authSession` properly.
-        @POST
+        @GET
         @Override
         public Response authResponse(@QueryParam(AbstractOAuth2IdentityProvider.OAUTH2_PARAMETER_STATE) String state,
                                      @QueryParam(AbstractOAuth2IdentityProvider.OAUTH2_PARAMETER_CODE) String authorizationCode,
                                      @QueryParam(OAuth2Constants.ERROR) String error,
                                      @QueryParam(OAuth2Constants.ERROR_DESCRIPTION) String errorDescription) {
-            return null;
-        }
 
-        @GET
-        public Response authResponse(@QueryParam(OAUTH2_PARAMETER_CODE) String authorizationCode,
-                                     @QueryParam(OAUTH2_PARAMETER_STATE) String state) {
+            logger.info("Vercel authResponse call");
+
             OAuth2IdentityProviderConfig providerConfig = provider.getConfig();
 
             if (authorizationCode == null) {
