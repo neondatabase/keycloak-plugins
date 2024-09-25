@@ -2,7 +2,6 @@ package vercel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -41,6 +40,8 @@ import java.util.Objects;
 
 public class VercelMPIdentityProvider extends OIDCIdentityProvider implements SocialIdentityProvider<OIDCIdentityProviderConfig> {
     private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
+    private static final String INSTALLATION_ID_ATTR = "vercel_installation_id";
+    private static final String INSTALLATION_ID_CLAIM = "installation_id";
 
     private static final Logger logger = Logger.getLogger(VercelMPIdentityProvider.class);
     //private static final String AUTH_URL = "https://api.vercel.com/oauth/authorize";
@@ -173,6 +174,7 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
         identity.setEmail(email);
         identity.setName(name);
         identity.setUsername((name == null || name.isEmpty()) ? email : name);
+        identity.setUserAttribute(INSTALLATION_ID_ATTR, (String) idToken.getOtherClaims().get(INSTALLATION_ID_CLAIM));
 
         identity.setBrokerUserId(getConfig().getAlias() + "." + id);
 
@@ -193,8 +195,6 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
             this.provider = provider;
         }
 
-        // Override parent's authResponse and change annotation to @POST to be able to use @GET with another list of parameters
-        // and we need to initialize `authSession` properly.
         @GET
         @Override
         public Response authResponse(@QueryParam(AbstractOAuth2IdentityProvider.OAUTH2_PARAMETER_STATE) String state,
