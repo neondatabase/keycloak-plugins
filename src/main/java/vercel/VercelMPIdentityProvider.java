@@ -2,7 +2,6 @@ package vercel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -193,8 +192,6 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
             this.provider = provider;
         }
 
-        // Override parent's authResponse and change annotation to @POST to be able to use @GET with another list of parameters
-        // and we need to initialize `authSession` properly.
         @GET
         @Override
         public Response authResponse(@QueryParam(AbstractOAuth2IdentityProvider.OAUTH2_PARAMETER_STATE) String state,
