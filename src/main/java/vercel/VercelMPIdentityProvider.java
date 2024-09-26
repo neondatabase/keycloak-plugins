@@ -40,8 +40,6 @@ import java.util.Objects;
 
 public class VercelMPIdentityProvider extends OIDCIdentityProvider implements SocialIdentityProvider<OIDCIdentityProviderConfig> {
     private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
-    private static final String INSTALLATION_ID_ATTR = "vercel_installation_id";
-    private static final String INSTALLATION_ID_CLAIM = "installation_id";
 
     private static final Logger logger = Logger.getLogger(VercelMPIdentityProvider.class);
     //private static final String AUTH_URL = "https://api.vercel.com/oauth/authorize";
