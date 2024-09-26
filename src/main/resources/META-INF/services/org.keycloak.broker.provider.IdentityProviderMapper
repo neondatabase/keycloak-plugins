@@ -1,1 +1,2 @@
 vercel.VercelMPUserAttributeMapper
+mappers.ProviderUIDToUserSessionNoteMapper
