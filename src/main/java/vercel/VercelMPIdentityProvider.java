@@ -147,32 +147,33 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
 
     // Extract user's identity from JWT.
     protected BrokeredIdentityContext extractIdentity(AccessTokenResponse tokenResponse, JsonWebToken idToken) {
+        String name = (String) idToken.getOtherClaims().get("user_name");
+        String email = (String) idToken.getOtherClaims().get("user_email");
+        String userIdPerInstallation = (String) idToken.getOtherClaims().get("user_id")
+
+        if (email == null || email.isEmpty()) {
+            email = userIdPerInstallation + "@vercel-marketplace.com";
+        }
         // Global user ID is provided by Vercel only for Neon integrations!
         // For other marketplace integrations it provides only user ID per each integration installation.
         // I.e. the same Vercel user will have different ID in different Vercel teams.
         //
-        // In case global_user_id is not set we will fall back to user ID per installation.
+        // In case global_user_id is not set we will fall back to user's Email and ID per installation eventually.
+        //
+        // NB! User will be able to login using Vercel SSO only into his first integration installation in case
+        // of userID per installation fallback! Because Keycloak will fail inserting second Federal ID for the same
+        // user and Identity Provider.
         String id = (String) idToken.getOtherClaims().get("global_user_id");
         if (id == null || id.isEmpty()) {
-            id = (String) idToken.getOtherClaims().get("user_id");
+            id = email;
         }
 
         BrokeredIdentityContext identity = new BrokeredIdentityContext(id, getConfig());
-
-        String name = (String) idToken.getOtherClaims().get("user_name");
-        String email = (String) idToken.getOtherClaims().get("user_email");
-
-        if (email == null || email.isEmpty()) {
-            email = id + "@vercel-marketplace.com";
-        }
-
         identity.getContextData().put(VALIDATED_ID_TOKEN, idToken);
-
         identity.setId(id);
         identity.setEmail(email);
         identity.setName(name);
         identity.setUsername((name == null || name.isEmpty()) ? email : name);
-
         identity.setBrokerUserId(getConfig().getAlias() + "." + id);
 
         if (tokenResponse != null && tokenResponse.getSessionState() != null) {
