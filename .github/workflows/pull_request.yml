@@ -1,0 +1,31 @@
+name: Build and create an artifact
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+
+jobs:
+  build_and_test:
+    name: Build and upload jar package
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+
+      - name: Build project with Maven
+        run: mvn -B package --file pom.xml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Package
+          path: target/neon-plugins.jar
