@@ -41,8 +41,6 @@ replacing the `<VERSION>` as appropriate
 
 Updated versions of these plugins should be shared via GitHub Releases
 
-you must include the compiled JAR file in the release artifacts, as dependent
-projects are expected to download this directly from GitHub as part of their 
-build pipeline
+Github Action will automatically trigger and build a new version of the plugin upon Release.
 
 [1]: https://www.keycloak.org/docs/latest/server_development/index.html#_providers
