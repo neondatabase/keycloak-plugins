@@ -40,6 +40,7 @@ import java.util.Objects;
 
 public class VercelMPIdentityProvider extends OIDCIdentityProvider implements SocialIdentityProvider<OIDCIdentityProviderConfig> {
     private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
+    private static final String EMAIL_FALLBACK_TEMPLATE = "%s@vercelmp.internal";
 
     private static final Logger logger = Logger.getLogger(VercelMPIdentityProvider.class);
     //private static final String AUTH_URL = "https://api.vercel.com/oauth/authorize";
@@ -152,7 +153,7 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
         String userIdPerInstallation = (String) idToken.getOtherClaims().get("user_id")
 
         if (email == null || email.isEmpty()) {
-            email = userIdPerInstallation + "@vercel-marketplace.com";
+            email = EMAIL_FALLBACK_TEMPLATE.formatted(userIdPerInstallation);
         }
         // Global user ID is provided by Vercel only for Neon integrations!
         // For other marketplace integrations it provides only user ID per each integration installation.
