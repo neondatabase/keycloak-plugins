@@ -150,7 +150,7 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
     protected BrokeredIdentityContext extractIdentity(AccessTokenResponse tokenResponse, JsonWebToken idToken) {
         String name = (String) idToken.getOtherClaims().get("user_name");
         String email = (String) idToken.getOtherClaims().get("user_email");
-        String userIdPerInstallation = (String) idToken.getOtherClaims().get("user_id")
+        String userIdPerInstallation = (String) idToken.getOtherClaims().get("user_id");
 
         if (email == null || email.isEmpty()) {
             email = EMAIL_FALLBACK_TEMPLATE.formatted(userIdPerInstallation);
