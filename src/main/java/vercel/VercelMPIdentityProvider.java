@@ -230,6 +230,7 @@ public class VercelMPIdentityProvider extends OIDCIdentityProvider implements So
                 authSession.setClientNote(OIDCLoginProtocol.REDIRECT_URI_PARAM, redirectUri);
                 authSession.setClientNote(OIDCLoginProtocol.RESPONSE_TYPE_PARAM, OAuth2Constants.CODE);
                 authSession.setClientNote(OIDCLoginProtocol.ISSUER, Urls.realmIssuer(uriInfo.getBaseUri(), realm.getName()));
+                authSession.setClientNote(OIDCLoginProtocol.STATE_PARAM, state);
 
                 session.getContext().setAuthenticationSession(authSession);
 
