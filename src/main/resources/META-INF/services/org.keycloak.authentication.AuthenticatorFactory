@@ -1,1 +1,4 @@
 trust_email.AuthenticatorFactory
+tech.neon.custom.NeonCleanUnverifiedAuthenticatorFactory
+tech.neon.custom.NeonIdpEmailVerifyAuthenticatorFactory
+tech.neon.custom.NeonIdpCreateUserIfUniqueFactory

@@ -1,2 +1,3 @@
 vercel.VercelMPUserAttributeMapper
 mappers.ProviderUIDToUserSessionNoteMapper
+tech.neon.microsoft.MicrosoftUserAttributeMapper
