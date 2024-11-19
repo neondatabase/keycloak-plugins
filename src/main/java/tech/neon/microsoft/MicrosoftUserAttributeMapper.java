@@ -13,7 +13,7 @@ public class MicrosoftUserAttributeMapper extends UserAttributeMapper {
 
 	@Override
 	public String getId() {
-		return "neonmicrosoft-user-attribute-mapper";
+		return "neon-microsoft-user-attribute-mapper";
 	}
 
 }
