@@ -51,9 +51,7 @@ public class NeonCleanUnverifiedAuthenticator extends AbstractIdpAuthenticator {
                     manager.removeStoredCredentialById(c.getId());
                 });
 
-        Stream<FederatedIdentityModel> linkedAccounts = session.users().getFederatedIdentitiesStream(realm, user);
-
-        linkedAccounts.forEach(identity -> {
+        session.users().getFederatedIdentitiesStream(realm, user).forEach(identity -> {
             logger.debug("Removing federated identity: " + identity.getIdentityProvider() + " for user: " + user.getUsername());
             session.users().removeFederatedIdentity(realm, user, identity.getIdentityProvider());
         });
