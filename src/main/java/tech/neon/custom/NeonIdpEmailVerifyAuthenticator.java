@@ -12,7 +12,7 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 
 import org.jboss.logging.Logger;
 
-public class NeonIdpEmailVerifyAuthenticator extends AbstractIdpAuthenticator {
+public class NeonIdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator {
     public static final String VERIFIED_EMAIL = "VERIFIED_EMAIL";
     private static Logger logger = Logger.getLogger(IdpEmailVerificationAuthenticator.class);
 
