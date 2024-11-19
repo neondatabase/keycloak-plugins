@@ -1,7 +1,5 @@
 package tech.neon.microsoft;
 
-import tech.neon.custom.NeonIdpEmailVerifyAuthenticator;
-
 import org.jboss.logging.Logger;
 import org.keycloak.broker.oidc.OIDCIdentityProvider;
 import org.keycloak.broker.oidc.OIDCIdentityProviderConfig;
@@ -14,6 +12,8 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.util.JsonSerialization;
+
+import tech.neon.custom.NeonIdpEmailVerificationAuthenticator;
 
 import java.io.IOException;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class MicrosoftIdentityProvider extends OIDCIdentityProvider
         
         if (email != null) {
             identity.setEmail(email);
-            identity.getContextData().put(NeonIdpEmailVerifyAuthenticator.VERIFIED_EMAIL, true);
+            identity.getContextData().put(NeonIdpEmailVerificationAuthenticator.VERIFIED_EMAIL, true);
             logger.debug("Using verified email: " + email);
         } else {
             String upnEmail = (String) claims.get("upn");

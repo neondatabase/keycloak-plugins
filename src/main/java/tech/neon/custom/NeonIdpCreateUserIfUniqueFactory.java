@@ -14,7 +14,7 @@ import org.keycloak.Config;
 public class NeonIdpCreateUserIfUniqueFactory implements AuthenticatorFactory {
     
     public static final String PROVIDER_ID = "neon-idp-create-user-if-unique";
-    static NeonIdpCreateUserIfUnique SINGLETON = new NeonIdpCreateUserIfUnique();
+    static NeonIdpCreateUserIfUniqueAuthenticator SINGLETON = new NeonIdpCreateUserIfUniqueAuthenticator();
 
     @Override
     public Authenticator create(KeycloakSession session) {

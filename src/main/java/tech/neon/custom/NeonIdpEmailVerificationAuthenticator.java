@@ -2,7 +2,6 @@ package tech.neon.custom;
 
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.authenticators.broker.AbstractIdpAuthenticator;
-import org.keycloak.authentication.authenticators.broker.IdpEmailVerificationAuthenticator;
 import org.keycloak.authentication.authenticators.broker.util.SerializedBrokeredIdentityContext;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.models.KeycloakSession;
@@ -14,7 +13,7 @@ import org.jboss.logging.Logger;
 
 public class NeonIdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator {
     public static final String VERIFIED_EMAIL = "VERIFIED_EMAIL";
-    private static Logger logger = Logger.getLogger(NeonIdpEmailVerifyAuthenticator.class);
+    private static Logger logger = Logger.getLogger(NeonIdpEmailVerificationAuthenticator.class);
 
     @Override
     public boolean requiresUser() {

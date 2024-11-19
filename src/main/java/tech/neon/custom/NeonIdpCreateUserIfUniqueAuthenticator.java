@@ -17,7 +17,7 @@ import org.jboss.logging.Logger;
 
 public class NeonIdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator {
 
-    private static Logger logger = Logger.getLogger(NeonIdpCreateUserIfUnique.class);
+    private static Logger logger = Logger.getLogger(NeonIdpCreateUserIfUniqueAuthenticator.class);
 
     @Override
     public boolean requiresUser() {
@@ -47,7 +47,7 @@ public class NeonIdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthentic
             UserModel federatedUser = session.users().addUser(realm, email);
             federatedUser.setEnabled(true);
 
-            if (Boolean.TRUE.equals(brokerContext.getContextData().get(NeonIdpEmailVerifyAuthenticator.VERIFIED_EMAIL))) {
+            if (Boolean.TRUE.equals(brokerContext.getContextData().get(NeonIdpEmailVerificationAuthenticator.VERIFIED_EMAIL))) {
                 federatedUser.setEmailVerified(true);
                 logger.debug("Email verified successfully for user: " + federatedUser.getEmail());
     

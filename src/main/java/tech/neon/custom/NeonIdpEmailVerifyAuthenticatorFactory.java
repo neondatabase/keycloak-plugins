@@ -14,7 +14,7 @@ import org.keycloak.Config;
 public class NeonIdpEmailVerifyAuthenticatorFactory implements AuthenticatorFactory {
     
     public static final String PROVIDER_ID = "neon-idp-verify-email";
-    static NeonIdpEmailVerifyAuthenticator SINGLETON = new NeonIdpEmailVerifyAuthenticator();
+    static NeonIdpEmailVerificationAuthenticator SINGLETON = new NeonIdpEmailVerificationAuthenticator();
 
     @Override
     public Authenticator create(KeycloakSession session) {
