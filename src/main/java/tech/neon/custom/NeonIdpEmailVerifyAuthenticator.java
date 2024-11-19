@@ -14,7 +14,7 @@ import org.jboss.logging.Logger;
 
 public class NeonIdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator {
     public static final String VERIFIED_EMAIL = "VERIFIED_EMAIL";
-    private static Logger logger = Logger.getLogger(IdpEmailVerificationAuthenticator.class);
+    private static Logger logger = Logger.getLogger(NeonIdpEmailVerifyAuthenticator.class);
 
     @Override
     public boolean requiresUser() {
