@@ -17,7 +17,7 @@ import org.jboss.logging.Logger;
 
 public class NeonIdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator {
 
-    private static Logger logger = Logger.getLogger(IdpEmailVerificationAuthenticator.class);
+    private static Logger logger = Logger.getLogger(NeonIdpCreateUserIfUnique.class);
 
     @Override
     public boolean requiresUser() {
