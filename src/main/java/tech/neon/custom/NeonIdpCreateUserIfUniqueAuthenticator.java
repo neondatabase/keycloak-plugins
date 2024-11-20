@@ -15,6 +15,11 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
+/**
+ * Custom implementation of Keycloak's IdP user creation authenticator.
+ * This authenticator functions similarly to the built-in IdpCreateUserIfUniqueAuthenticator,
+ * but adds support for the VERIFIED_EMAIL flag set by NeonIdpEmailVerificationAuthenticator.
+ */
 public class NeonIdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator {
 
     private static Logger logger = Logger.getLogger(NeonIdpCreateUserIfUniqueAuthenticator.class);
