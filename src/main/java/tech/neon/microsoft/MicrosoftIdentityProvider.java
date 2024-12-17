@@ -5,6 +5,7 @@ import org.keycloak.broker.oidc.OIDCIdentityProvider;
 import org.keycloak.broker.oidc.OIDCIdentityProviderConfig;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.broker.provider.IdentityBrokerException;
+import org.keycloak.broker.provider.util.SimpleHttp;
 import org.keycloak.broker.social.SocialIdentityProvider;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.KeycloakSession;
@@ -12,6 +13,8 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.util.JsonSerialization;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import tech.neon.custom.NeonIdpEmailVerificationAuthenticator;
 
@@ -30,6 +33,7 @@ public class MicrosoftIdentityProvider extends OIDCIdentityProvider
                                                                                   // sufficient to obtain all necessary
                                                                                   // user info
 
+    private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me/"; // user profile service endpoint
     private static final Logger logger = Logger.getLogger(MicrosoftIdentityProvider.class);
 
     public MicrosoftIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
@@ -54,6 +58,16 @@ public class MicrosoftIdentityProvider extends OIDCIdentityProvider
             throw new IdentityBrokerException("Could not decode access token response.", e);
         }
 
+        JsonNode profile;
+        try {
+            profile = SimpleHttp.doGet(PROFILE_URL, session).auth(tokenResponse.getToken()).asJson();
+            if (profile.has("error") && !profile.get("error").isNull()) {
+                throw new IdentityBrokerException("Error in Microsoft Graph API response. Payload: " + profile.toString());
+            }
+        } catch (Exception e) {
+            throw new IdentityBrokerException("Could not obtain user profile from Microsoft Graph", e);
+        }
+
         String encodedIdToken = tokenResponse.getIdToken();
 
         JsonWebToken idToken = validateToken(encodedIdToken);
@@ -63,15 +77,20 @@ public class MicrosoftIdentityProvider extends OIDCIdentityProvider
         BrokeredIdentityContext identity = new BrokeredIdentityContext(id, getConfig());
 
         String email = (String) claims.get("email");
+        String profileEmail = getJsonProperty(profile, "mail");
         
         if (email != null) {
             identity.setEmail(email);
             identity.getContextData().put(NeonIdpEmailVerificationAuthenticator.VERIFIED_EMAIL, true);
             logger.debug("Using verified email: " + email);
+        } else if (profileEmail != null) {
+            identity.setEmail(profileEmail);
+            logger.info("Using unverified email: " + profileEmail);
         } else {
             String upnEmail = (String) claims.get("upn");
-            logger.debug("Email not found in claims, using UPN instead: " + upnEmail);
             identity.setEmail(upnEmail);
+            identity.getContextData().put(NeonIdpEmailVerificationAuthenticator.VERIFIED_EMAIL, true);
+            logger.debug("Email not found in claims and profile, using UPN instead: " + upnEmail);
         }
         identity.setUsername(id);
 
