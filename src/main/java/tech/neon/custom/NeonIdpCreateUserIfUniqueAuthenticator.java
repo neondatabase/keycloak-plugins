@@ -55,8 +55,6 @@ public class NeonIdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthentic
             if (Boolean.TRUE.equals(brokerContext.getContextData().get(NeonIdpEmailVerificationAuthenticator.VERIFIED_EMAIL))) {
                 federatedUser.setEmailVerified(true);
                 logger.debug("Email verified successfully for user: " + federatedUser.getEmail());
-            } else {
-                federatedUser.addRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
             }
 
             for (Map.Entry<String, List<String>> attr : serializedCtx.getAttributes().entrySet().stream()
